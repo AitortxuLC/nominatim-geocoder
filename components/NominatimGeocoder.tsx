@@ -330,15 +330,19 @@ export function NominatimGeocoder() {
                 onMarkerMove={handleMarkerMove}
               />
             </div>
-            {loadingReverse && (
-              <div className="mt-2 text-center text-xs text-gray-500">
-                Geocodificando posición...
-              </div>
-            )}
           </div>
 
           {/* Right Column: Geocoding Info and Address Builder */}
-          <div className="space-y-4">
+          <div className="space-y-4 relative">
+            {/* Loading overlay for right column */}
+            {loadingReverse && (
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-[1000] rounded-lg">
+                <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#ed6103]"></div>
+                  <span className="text-sm font-medium text-gray-700">Cargando información de OSM...</span>
+                </div>
+              </div>
+            )}
             {/* Reverse Geocoding Result */}
             {reverseResult && (
               <div className="bg-white rounded-lg shadow-sm p-4">
