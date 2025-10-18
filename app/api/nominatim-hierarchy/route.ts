@@ -11,10 +11,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Headers for Nominatim API (required by usage policy)
+    const nominatimHeaders = {
+      'User-Agent': 'Nominatim-Geocoder-App/1.0 (contact@yourdomain.com)',
+      'Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://nominatim-geocoder.vercel.app'
+    }
+
     // First, get reverse geocoding to get the main place
     const reverseUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&zoom=16&format=json&addressdetails=1&extratags=1`
     console.log('[NOMINATIM HIERARCHY] Reverse geocoding URL:', reverseUrl)
-    const reverseResponse = await fetch(reverseUrl)
+    const reverseResponse = await fetch(reverseUrl, { headers: nominatimHeaders })
     console.log('[NOMINATIM HIERARCHY] Reverse response status:', reverseResponse.status)
 
     if (!reverseResponse.ok) {
@@ -36,7 +42,7 @@ export async function GET(request: NextRequest) {
       const detailsUrl = `https://nominatim.openstreetmap.org/details?osmtype=${osmPrefix}&osmid=${reverseData.osm_id}&addressdetails=1&hierarchy=1&group_hierarchy=1&format=json`
       console.log('[NOMINATIM HIERARCHY] Details URL:', detailsUrl)
 
-      const detailsResponse = await fetch(detailsUrl)
+      const detailsResponse = await fetch(detailsUrl, { headers: nominatimHeaders })
       console.log('[NOMINATIM HIERARCHY] Details response status:', detailsResponse.status)
 
       if (!detailsResponse.ok) {

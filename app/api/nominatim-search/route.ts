@@ -13,7 +13,12 @@ export async function GET(request: NextRequest) {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=${country}&format=jsonv2`
     console.log('[NOMINATIM SEARCH] Request URL:', nominatimUrl)
 
-    const response = await fetch(nominatimUrl)
+    const response = await fetch(nominatimUrl, {
+      headers: {
+        'User-Agent': 'Nominatim-Geocoder-App/1.0 (contact@yourdomain.com)',
+        'Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://nominatim-geocoder.vercel.app'
+      }
+    })
     console.log('[NOMINATIM SEARCH] Response status:', response.status)
 
     if (!response.ok) {
