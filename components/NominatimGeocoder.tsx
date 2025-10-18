@@ -127,7 +127,7 @@ export function NominatimGeocoder() {
         setAllAddressGeos(allItems)
 
         // Apply filters
-        const filteredItems = allItems.filter(geo => {
+        const filteredItems = allItems.filter((geo: AddressGeo) => {
           // Exclude specific types: country, postcode, country_code
           const excludedTypes = ['country', 'postcode', 'country_code']
           if (excludedTypes.includes(geo.key)) {
@@ -208,7 +208,7 @@ export function NominatimGeocoder() {
       buildAddress(allItemsWithSelection)
     } else {
       // Apply filters, preserve selected state for items that pass the filter
-      const filteredItems = allAddressGeos.filter(geo => {
+      const filteredItems = allAddressGeos.filter((geo: AddressGeo) => {
         // Exclude specific types: country, postcode, country_code
         const excludedTypes = ['country', 'postcode', 'country_code']
         if (excludedTypes.includes(geo.key)) {
