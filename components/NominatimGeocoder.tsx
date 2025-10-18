@@ -61,6 +61,19 @@ export function NominatimGeocoder() {
   const [showNonAddress, setShowNonAddress] = useState(false)
   const [disableAllFilters, setDisableAllFilters] = useState(false)
 
+  // Helper function to convert osm_type to uppercase format (N, W, R)
+  const normalizeOsmType = (osmType: string): string => {
+    const typeMap: Record<string, string> = {
+      'node': 'N',
+      'way': 'W',
+      'relation': 'R',
+      'N': 'N',
+      'W': 'W',
+      'R': 'R'
+    }
+    return typeMap[osmType] || 'N'
+  }
+
   const handleSearch = async () => {
     if (!searchText.trim()) return
 
@@ -354,7 +367,7 @@ export function NominatimGeocoder() {
                     <span className="font-semibold text-gray-700">OSM:</span>
                     <p>
                       <a
-                        href={`https://www.openstreetmap.org/${reverseResult.osm_type}/${reverseResult.osm_id}`}
+                        href={`https://nominatim.openstreetmap.org/ui/details.html?osmtype=${normalizeOsmType(reverseResult.osm_type)}&osmid=${reverseResult.osm_id}&class=${reverseResult.class}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 underline font-semibold cursor-pointer"
@@ -434,7 +447,7 @@ export function NominatimGeocoder() {
                           <td className="px-2 py-2">
                             {geo.osm_type && geo.osm_id ? (
                               <a
-                                href={`https://www.openstreetmap.org/${geo.osm_type}/${geo.osm_id}`}
+                                href={`https://nominatim.openstreetmap.org/ui/details.html?osmtype=${normalizeOsmType(geo.osm_type)}&osmid=${geo.osm_id}&class=${geo.class || 'boundary'}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 underline font-semibold cursor-pointer"
