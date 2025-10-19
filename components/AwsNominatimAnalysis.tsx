@@ -20,15 +20,37 @@ export function AwsNominatimAnalysis() {
   const [error, setError] = useState<string | null>(null)
   const [searchMethodStats, setSearchMethodStats] = useState<SearchMethodStats[]>([])
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
+  const [availableFiles, setAvailableFiles] = useState<string[]>([])
+  const [selectedFile, setSelectedFile] = useState<string>('aws_data_matched_with_osm.csv')
+  const [searchText, setSearchText] = useState<string>('')
 
   useEffect(() => {
-    loadCsvData()
+    loadAvailableFiles()
   }, [])
 
-  const loadCsvData = async () => {
+  useEffect(() => {
+    if (selectedFile) {
+      loadCsvData(selectedFile)
+    }
+  }, [selectedFile])
+
+  const loadAvailableFiles = async () => {
+    try {
+      const response = await fetch('/api/csv-files')
+      const data = await response.json()
+      if (data.files && data.files.length > 0) {
+        setAvailableFiles(data.files)
+      }
+    } catch (err) {
+      console.error('Error loading available files:', err)
+    }
+  }
+
+  const loadCsvData = async (fileName: string) => {
     try {
       setLoading(true)
-      const response = await fetch('/data/aws_data_matched_with_osm.csv')
+      setError(null)
+      const response = await fetch(`/data/${fileName}`)
 
       if (!response.ok) {
         throw new Error('Failed to load CSV file')
@@ -106,16 +128,34 @@ export function AwsNominatimAnalysis() {
     return <span className="text-gray-700">{value}</span>
   }
 
-  // Get filtered data based on selected filter
-  const filteredData = selectedFilter
-    ? data.filter(row => {
-        // If filtering by "unknown", include empty/undefined values
-        if (selectedFilter === 'unknown') {
-          return !row.search_method || row.search_method === 'unknown'
+  // Get filtered data based on selected filter and search text
+  const filteredData = data.filter(row => {
+    // Apply search method filter
+    let matchesMethodFilter = true
+    if (selectedFilter) {
+      if (selectedFilter === 'unknown') {
+        matchesMethodFilter = !row.search_method || row.search_method === 'unknown'
+      } else {
+        matchesMethodFilter = row.search_method === selectedFilter
+      }
+    }
+
+    // Apply text search filter (search in name column)
+    let matchesTextSearch = true
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase()
+      // Search in name column or any column that might contain the original name
+      matchesTextSearch = Object.entries(row).some(([key, value]) => {
+        // Focus on name-related columns
+        if (key.toLowerCase().includes('name') || key.toLowerCase().includes('label')) {
+          return value.toLowerCase().includes(searchLower)
         }
-        return row.search_method === selectedFilter
+        return false
       })
-    : data
+    }
+
+    return matchesMethodFilter && matchesTextSearch
+  })
 
   const handleFilterClick = (method: string) => {
     setSelectedFilter(selectedFilter === method ? null : method)
@@ -148,10 +188,38 @@ export function AwsNominatimAnalysis() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">AWS-Nominatim Analysis</h1>
-          <p className="text-sm text-gray-600">
-            Análisis de datos de matching entre AWS y Nominatim ({data.length} registros)
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">AWS-Nominatim Analysis</h1>
+              <p className="text-sm text-gray-600">
+                Análisis de datos de matching entre AWS y Nominatim ({data.length} registros)
+              </p>
+            </div>
+
+            {/* File Selector */}
+            {availableFiles.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-medium text-gray-700">
+                  Seleccionar archivo CSV:
+                </label>
+                <select
+                  value={selectedFile}
+                  onChange={(e) => {
+                    setSelectedFile(e.target.value)
+                    setSelectedFilter(null) // Reset filter when changing file
+                    setSearchText('') // Reset search text when changing file
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103] bg-white min-w-[300px]"
+                >
+                  {availableFiles.map((file) => (
+                    <option key={file} value={file}>
+                      {file}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search Method Statistics */}
@@ -221,6 +289,42 @@ export function AwsNominatimAnalysis() {
             </h2>
             <div className="text-sm text-gray-600">
               Mostrando {filteredData.length} de {data.length} registros
+            </div>
+          </div>
+
+          {/* Search Input */}
+          <div className="mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Buscar por nombre..."
+                className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103] focus:border-transparent"
+              />
+              <svg
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              {searchText && (
+                <button
+                  onClick={() => setSearchText('')}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
 
