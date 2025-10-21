@@ -87,7 +87,7 @@ export function AwsNominatimAnalysis() {
     const methodCounts: Record<string, number> = {}
 
     rows.forEach(row => {
-      const method = row.search_method || 'unknown'
+      const method = row.search_method || 'found'
       methodCounts[method] = (methodCounts[method] || 0) + 1
     })
 
@@ -133,8 +133,9 @@ export function AwsNominatimAnalysis() {
     // Apply search method filter
     let matchesMethodFilter = true
     if (selectedFilter) {
-      if (selectedFilter === 'unknown') {
-        matchesMethodFilter = !row.search_method || row.search_method === 'unknown'
+      if (selectedFilter === 'found') {
+        // When filtering by "found", include rows with empty search_method or search_method === 'found'
+        matchesMethodFilter = !row.search_method || row.search_method === 'found'
       } else {
         matchesMethodFilter = row.search_method === selectedFilter
       }
