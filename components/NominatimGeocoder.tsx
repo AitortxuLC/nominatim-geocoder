@@ -60,6 +60,11 @@ export function NominatimGeocoder() {
   const [loadingReverse, setLoadingReverse] = useState(false)
   const [showNonAddress, setShowNonAddress] = useState(false)
   const [disableAllFilters, setDisableAllFilters] = useState(false)
+  const [minRank, setMinRank] = useState<number>(8)
+  const [maxRank, setMaxRank] = useState<number>(22)
+  const [actualMinRank, setActualMinRank] = useState<number>(8)
+  const [actualMaxRank, setActualMaxRank] = useState<number>(22)
+  const [searchError, setSearchError] = useState<string | null>(null)
 
   // Helper function to convert osm_type to uppercase format (N, W, R)
   const normalizeOsmType = (osmType: string): string => {
@@ -78,6 +83,7 @@ export function NominatimGeocoder() {
     if (!searchText.trim()) return
 
     setLoading(true)
+    setSearchError(null) // Clear previous errors
     try {
       const response = await fetch(
         `/api/nominatim-search?q=${encodeURIComponent(searchText)}&country=${selectedCountry}`
@@ -93,9 +99,13 @@ export function NominatimGeocoder() {
         setMarkerPosition([lat, lon])
         // Trigger reverse geocoding
         handleReverseGeocode(lat, lon)
+      } else {
+        // No results found
+        setSearchError(`No se encontraron resultados para "${searchText}" en ${COUNTRIES.find(c => c.code === selectedCountry)?.name || selectedCountry}`)
       }
     } catch (error) {
       console.error('Error searching:', error)
+      setSearchError('Error al realizar la búsqueda. Por favor, inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -148,14 +158,14 @@ export function NominatimGeocoder() {
             return false
           }
 
-          // Filter items with rank_address between 8 and 18 (inclusive)
+          // Filter items with rank_address between minRank and maxRank (inclusive)
           if (!geo.rank_address) {
             console.log(`[COMPONENT] Excluding ${geo.key} (${geo.value}) - no rank_address`)
             return false // Exclude items without rank_address
           }
           const rankAddress = parseInt(geo.rank_address)
-          const include = rankAddress >= 8 && rankAddress <= 18
-          console.log(`[COMPONENT] ${include ? 'Including' : 'Excluding'} ${geo.key} (${geo.value}) - rank_address: ${rankAddress}`)
+          const include = rankAddress >= minRank && rankAddress <= maxRank
+          console.log(`[COMPONENT] ${include ? 'Including' : 'Excluding'} ${geo.key} (${geo.value}) - rank_address: ${rankAddress} (range: ${minRank}-${maxRank})`)
           return include
         })
 
@@ -228,17 +238,17 @@ export function NominatimGeocoder() {
           return false
         }
 
-        // Filter items with rank_address between 8 and 18 (inclusive)
+        // Filter items with rank_address between minRank and maxRank (inclusive)
         if (!geo.rank_address) {
           return false
         }
         const rankAddress = parseInt(geo.rank_address)
-        return rankAddress >= 8 && rankAddress <= 18
+        return rankAddress >= minRank && rankAddress <= maxRank
       })
       setAddressGeos(filteredItems)
       buildAddress(filteredItems)
     }
-  }, [disableAllFilters, allAddressGeos])
+  }, [disableAllFilters, allAddressGeos, minRank, maxRank])
 
   return (
     <div className="space-y-4">
@@ -288,6 +298,21 @@ export function NominatimGeocoder() {
             </button>
           </div>
         </div>
+
+        {/* Search Error Message */}
+        {searchError && (
+          <div className="mt-3">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-800 mb-1">No se encontraron resultados</h3>
+                <p className="text-xs text-red-700">{searchError}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search Results */}
         {searchResults.length > 0 && (
