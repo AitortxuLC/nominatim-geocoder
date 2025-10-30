@@ -43,6 +43,17 @@ export function Navigation() {
               >
                 Aws-Nominatim
               </Link>
+
+              <Link
+                href="/geos-mapper"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/geos-mapper')
+                    ? 'bg-[#ed6103] text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Geos Mapper
+              </Link>
             </div>
           </div>
         </div>
