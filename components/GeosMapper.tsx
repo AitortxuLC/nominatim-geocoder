@@ -248,19 +248,31 @@ export function GeosMapper() {
   }
 
   const exportData = () => {
-    const exportRows = data.map(row => ({
-      id: row.col0,
-      nombre: row.col1,
-      'nombre del padre': row.col2,
-      slug: row.col3,
-      'id del padre': row.col4,
-      nivel: row.col5,
-      'geos cercanos': row.col6,
-      coordenadas: row.col7,
-      'id de lamudi classic': row.col9,
-      'id de osm': `|${row.col9}|${row.col10}`,
-      'nota de confirmación': row._confirmationNote || ''
-    }))
+    const exportRows = data.map(row => {
+      // Si la fila está confirmada, usar el nuevo mapeo OSM
+      let osmIdToExport = row.col10
+
+      if (row._confirmationNote) {
+        // Fila confirmada: usar NUEVO MAPEO OSM
+        const nuevoMapeo = row['NUEVO MAPEO OSM'] || row.col10
+        // Convertir comas y espacios a pipes
+        osmIdToExport = nuevoMapeo.replace(/[,\s]+/g, '|').trim()
+      }
+
+      return {
+        id: row.col0,
+        nombre: row.col1,
+        'nombre del padre': row.col2,
+        slug: row.col3,
+        'id del padre': row.col4,
+        nivel: row.col5,
+        'geos cercanos': row.col6,
+        coordenadas: row.col7,
+        'id de lamudi classic': row.col9,
+        'id de osm': `|${row.col9}|${osmIdToExport}`,
+        'nota de confirmación': row._confirmationNote || ''
+      }
+    })
 
     const csv = Papa.unparse(exportRows)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
