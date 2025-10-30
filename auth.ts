@@ -29,11 +29,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   pages: {
-    signIn: '/login'
+    signIn: '/login',
+    signOut: '/login'
   },
   callbacks: {
     authorized: async ({ auth }) => {
       return !!auth
     }
-  }
+  },
+  trustHost: true
 })
