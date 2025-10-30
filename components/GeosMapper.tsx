@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Papa from 'papaparse'
+import { ComparisonMapModal } from './ComparisonMapModal'
 
 interface GeoRow {
   col0: string // id
@@ -35,7 +36,6 @@ export function GeosMapper() {
   const [filterWithoutNuevoMapeo, setFilterWithoutNuevoMapeo] = useState(true)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [selectedRowForConfirm, setSelectedRowForConfirm] = useState<GeoRow | null>(null)
-  const [confirmationNote, setConfirmationNote] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const headers = [
@@ -199,28 +199,25 @@ export function GeosMapper() {
 
   const handleOpenConfirmModal = (row: GeoRow) => {
     setSelectedRowForConfirm(row)
-    setConfirmationNote(row._confirmationNote || '')
     setConfirmModalOpen(true)
   }
 
   const handleCloseConfirmModal = () => {
     setConfirmModalOpen(false)
     setSelectedRowForConfirm(null)
-    setConfirmationNote('')
   }
 
-  const handleSaveConfirmation = () => {
+  const handleSaveConfirmation = (note: string) => {
     if (selectedRowForConfirm) {
       const updatedData = [...data]
       const actualIndex = selectedRowForConfirm._index!
       updatedData[actualIndex] = {
         ...updatedData[actualIndex],
-        _confirmationNote: confirmationNote
+        _confirmationNote: note
       }
       setData(updatedData)
       applyFilters(updatedData, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
     }
-    handleCloseConfirmModal()
   }
 
   const createOsmLink = (osmId: string) => {
@@ -495,9 +492,9 @@ export function GeosMapper() {
                                 ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
                                 : 'bg-[#ed6103] text-white hover:bg-[#d55502]'
                             }`}
-                            title={row._confirmationNote ? 'Editar confirmación' : 'Confirmar cambio'}
+                            title={row._confirmationNote ? 'Ver confirmación' : 'Examinar mapeo'}
                           >
-                            {row._confirmationNote ? '✓ Confirmado' : 'Confirmar cambio'}
+                            {row._confirmationNote ? '✓ Confirmado' : 'Examinar'}
                           </button>
                         </td>
                       </tr>
@@ -537,65 +534,13 @@ export function GeosMapper() {
         )}
       </div>
 
-      {/* Confirmation Modal */}
-      {confirmModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Confirmar cambio</h2>
-                <button
-                  onClick={handleCloseConfirmModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {selectedRowForConfirm && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-semibold">ID:</span> {selectedRowForConfirm.col0}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-semibold">Nombre:</span> {selectedRowForConfirm.col1}
-                  </p>
-                </div>
-              )}
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nota de confirmación:
-                </label>
-                <textarea
-                  value={confirmationNote}
-                  onChange={(e) => setConfirmationNote(e.target.value)}
-                  placeholder="Escribe una nota sobre este cambio..."
-                  rows={4}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103] focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={handleCloseConfirmModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveConfirmation}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#ed6103] hover:bg-[#d55502] rounded-lg transition-colors"
-                >
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Comparison Map Modal */}
+      <ComparisonMapModal
+        isOpen={confirmModalOpen}
+        row={selectedRowForConfirm}
+        onClose={handleCloseConfirmModal}
+        onConfirm={handleSaveConfirmation}
+      />
     </div>
   )
 }
