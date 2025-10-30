@@ -16,6 +16,14 @@ const GeoJSON = dynamic(
   () => import('react-leaflet').then((mod) => mod.GeoJSON),
   { ssr: false }
 )
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+)
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+)
 
 interface GeoRow {
   col0: string // id
@@ -78,6 +86,30 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
     }
   }, [isOpen, row])
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen])
+
+  useEffect(() => {
+    // Fix Leaflet default marker icon
+    if (typeof window !== 'undefined') {
+      const L = require('leaflet')
+      delete L.Icon.Default.prototype._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      })
+    }
+  }, [])
+
   const parseMultipleOsmIds = (osmIdString: string): string[] => {
     if (!osmIdString || osmIdString.trim() === '' || osmIdString === '#N/A') {
       return []
@@ -115,6 +147,13 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
       type: typeMap[type] || 'relation',
       id
     }
+  }
+
+  const getNominatimUrl = (osmIdString: string): string => {
+    const parsed = parseOsmId(osmIdString)
+    if (!parsed) return '#'
+
+    return `https://nominatim.openstreetmap.org/ui/details.html?osmtype=${parsed.type[0].toUpperCase()}&osmid=${parsed.id}`
   }
 
   const fetchNominatimGeometry = async (osmIdString: string): Promise<NominatimData | null> => {
@@ -187,7 +226,7 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
 
   const handleConfirm = () => {
     onConfirm(note)
-    handleClose()
+    // Don't close - parent will handle navigation to next row or closing
   }
 
   const handleClose = () => {
@@ -225,17 +264,27 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4 border-b pb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Comparación de Mapeos</h2>
-              <div className="mt-2 text-sm text-gray-600">
-                <p><span className="font-semibold">ID:</span> {row.col0}</p>
-                <p><span className="font-semibold">Nombre:</span> {row.col1}</p>
-              </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-800">
+                Comparación de Mapeos - <span className="font-semibold">ID:</span> {row.col0} | <span className="font-semibold">Nombre:</span> {row.col1}
+                {row.col2 && row.col2 !== '' && (
+                  <> | <span className="font-semibold">Padre:</span> {row.col2}</>
+                )}
+                {row.col3 && row.col3 !== '' && (
+                  <> | <span className="font-semibold">Slug:</span> {row.col3}</>
+                )}
+              </h2>
             </div>
             <button
               onClick={handleClose}
@@ -265,24 +314,62 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
           {!loading && !error && (
             <div className="grid grid-cols-2 gap-4 mb-6">
               {/* Original OSM Map */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden flex flex-col">
                 <div className="bg-gray-100 p-3 border-b">
                   <h3 className="font-semibold text-gray-800">OSM Original</h3>
-                  <p className="text-sm text-gray-600">
-                    {row.col10 || 'N/A'}
-                    {originalDataList.length > 1 && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        {originalDataList.length} zonas
-                      </span>
-                    )}
-                  </p>
-                  {originalDataList.length === 1 && originalDataList[0].properties?.display_name && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {originalDataList[0].properties.display_name}
-                    </p>
+                  {originalDataList.length === 1 ? (
+                    <>
+                      <p className="text-sm text-gray-600">
+                        <a
+                          href={getNominatimUrl(originalDataList[0].osmId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#ed6103] hover:underline"
+                        >
+                          {row.col10 || 'N/A'}
+                        </a>
+                      </p>
+                      {originalDataList[0].properties?.display_name && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {originalDataList[0].properties.display_name}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-2">
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                          {originalDataList.length} zonas
+                        </span>
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {originalDataList.map((data, index) => (
+                          <div key={`header-link-orig-${index}`} className="flex items-start gap-2">
+                            <div
+                              className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <div className="flex-1">
+                              <a
+                                href={getNominatimUrl(data.osmId)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-medium hover:underline"
+                                style={{ color: COLORS[index % COLORS.length] }}
+                              >
+                                {data.osmId}
+                              </a>
+                              {data.properties?.display_name && (
+                                <p className="text-xs text-gray-500">{data.properties.display_name}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
-                <div className="h-96">
+                <div className="flex-1 min-h-[384px]">
                   {originalDataList.length > 0 ? (
                     <MapContainer
                       center={getMapCenter(originalDataList)}
@@ -294,17 +381,35 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       />
-                      {originalDataList.map((data, index) => (
-                        <GeoJSON
-                          key={`original-${data.osmId}-${index}`}
-                          data={data.geometry}
-                          style={{
-                            color: COLORS[index % COLORS.length],
-                            weight: 2,
-                            fillOpacity: 0.2
-                          }}
-                        />
-                      ))}
+                      {originalDataList.map((data, index) => {
+                        if (data.geometry.type === 'Point') {
+                          const coords = data.geometry.coordinates
+                          return (
+                            <Marker
+                              key={`original-${data.osmId}-${index}`}
+                              position={[coords[1], coords[0]]}
+                            >
+                              <Popup>
+                                <strong>{data.osmId}</strong>
+                                {data.properties?.display_name && (
+                                  <p className="text-xs mt-1">{data.properties.display_name}</p>
+                                )}
+                              </Popup>
+                            </Marker>
+                          )
+                        }
+                        return (
+                          <GeoJSON
+                            key={`original-${data.osmId}-${index}`}
+                            data={data.geometry}
+                            style={{
+                              color: COLORS[index % COLORS.length],
+                              weight: 2,
+                              fillOpacity: 0.2
+                            }}
+                          />
+                        )
+                      })}
                     </MapContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full bg-gray-50">
@@ -312,49 +417,65 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                     </div>
                   )}
                 </div>
-                {/* Legend for original */}
-                {originalDataList.length > 1 && (
-                  <div className="p-2 bg-gray-50 border-t">
-                    <p className="text-xs font-semibold text-gray-600 mb-1">Leyenda:</p>
-                    <div className="flex flex-col gap-1">
-                      {originalDataList.map((data, index) => (
-                        <div key={`legend-orig-${index}`} className="flex items-start gap-2">
-                          <div
-                            className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                          />
-                          <div className="flex-1">
-                            <span className="text-xs font-medium text-gray-700">{data.osmId}</span>
-                            {data.properties?.display_name && (
-                              <p className="text-xs text-gray-500">{data.properties.display_name}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* New OSM Map */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden flex flex-col">
                 <div className="bg-gray-100 p-3 border-b">
                   <h3 className="font-semibold text-gray-800">Nuevo Mapeo OSM</h3>
-                  <p className="text-sm text-gray-600">
-                    {row['NUEVO MAPEO OSM'] || 'N/A'}
-                    {newDataList.length > 1 && (
-                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        {newDataList.length} zonas
-                      </span>
-                    )}
-                  </p>
-                  {newDataList.length === 1 && newDataList[0].properties?.display_name && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {newDataList[0].properties.display_name}
-                    </p>
+                  {newDataList.length === 1 ? (
+                    <>
+                      <p className="text-sm text-gray-600">
+                        <a
+                          href={getNominatimUrl(newDataList[0].osmId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#ed6103] hover:underline"
+                        >
+                          {row['NUEVO MAPEO OSM'] || 'N/A'}
+                        </a>
+                      </p>
+                      {newDataList[0].properties?.display_name && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {newDataList[0].properties.display_name}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-2">
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          {newDataList.length} zonas
+                        </span>
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {newDataList.map((data, index) => (
+                          <div key={`header-link-new-${index}`} className="flex items-start gap-2">
+                            <div
+                              className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <div className="flex-1">
+                              <a
+                                href={getNominatimUrl(data.osmId)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-medium hover:underline"
+                                style={{ color: COLORS[index % COLORS.length] }}
+                              >
+                                {data.osmId}
+                              </a>
+                              {data.properties?.display_name && (
+                                <p className="text-xs text-gray-500">{data.properties.display_name}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
-                <div className="h-96">
+                <div className="flex-1 min-h-[384px]">
                   {newDataList.length > 0 ? (
                     <MapContainer
                       center={getMapCenter(newDataList)}
@@ -366,17 +487,35 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       />
-                      {newDataList.map((data, index) => (
-                        <GeoJSON
-                          key={`new-${data.osmId}-${index}`}
-                          data={data.geometry}
-                          style={{
-                            color: COLORS[index % COLORS.length],
-                            weight: 2,
-                            fillOpacity: 0.2
-                          }}
-                        />
-                      ))}
+                      {newDataList.map((data, index) => {
+                        if (data.geometry.type === 'Point') {
+                          const coords = data.geometry.coordinates
+                          return (
+                            <Marker
+                              key={`new-${data.osmId}-${index}`}
+                              position={[coords[1], coords[0]]}
+                            >
+                              <Popup>
+                                <strong>{data.osmId}</strong>
+                                {data.properties?.display_name && (
+                                  <p className="text-xs mt-1">{data.properties.display_name}</p>
+                                )}
+                              </Popup>
+                            </Marker>
+                          )
+                        }
+                        return (
+                          <GeoJSON
+                            key={`new-${data.osmId}-${index}`}
+                            data={data.geometry}
+                            style={{
+                              color: COLORS[index % COLORS.length],
+                              weight: 2,
+                              fillOpacity: 0.2
+                            }}
+                          />
+                        )
+                      })}
                     </MapContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full bg-gray-50">
@@ -384,28 +523,6 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                     </div>
                   )}
                 </div>
-                {/* Legend for new */}
-                {newDataList.length > 1 && (
-                  <div className="p-2 bg-gray-50 border-t">
-                    <p className="text-xs font-semibold text-gray-600 mb-1">Leyenda:</p>
-                    <div className="flex flex-col gap-1">
-                      {newDataList.map((data, index) => (
-                        <div key={`legend-new-${index}`} className="flex items-start gap-2">
-                          <div
-                            className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                          />
-                          <div className="flex-1">
-                            <span className="text-xs font-medium text-gray-700">{data.osmId}</span>
-                            {data.properties?.display_name && (
-                              <p className="text-xs text-gray-500">{data.properties.display_name}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}

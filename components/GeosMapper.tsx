@@ -210,6 +210,13 @@ export function GeosMapper() {
 
   const handleSaveConfirmation = (note: string) => {
     if (selectedRowForConfirm) {
+      // Find next row in current filteredData before updating
+      const currentIndexInFiltered = filteredData.findIndex(row => row._index === selectedRowForConfirm._index)
+      const nextRow = (currentIndexInFiltered !== -1 && currentIndexInFiltered < filteredData.length - 1)
+        ? filteredData[currentIndexInFiltered + 1]
+        : null
+
+      // Update data with confirmation note
       const updatedData = [...data]
       const actualIndex = selectedRowForConfirm._index!
       updatedData[actualIndex] = {
@@ -218,6 +225,15 @@ export function GeosMapper() {
       }
       setData(updatedData)
       applyFilters(updatedData, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+
+      // Navigate to next row or close
+      if (nextRow) {
+        setSelectedRowForConfirm(nextRow)
+        // Modal stays open, just changes the row
+      } else {
+        // Last row, close modal
+        handleCloseConfirmModal()
+      }
     }
   }
 
