@@ -20,10 +20,23 @@ const GeoJSON = dynamic(
 interface GeoRow {
   col0: string // id
   col1: string // nombre
-  col10: string // ID OSM original
-  'NUEVO MAPEO OSM': string // Nuevo mapeo OSM
-  _confirmationNote?: string
-  [key: string]: string | undefined
+  col2: string // nombre del padre
+  col3: string // slug
+  col4: string // id del padre
+  col5: string // nivel
+  col6: string // geos cercanos
+  col7: string // coordenadas
+  col8: string // (vacío generalmente)
+  col9: string // id de lamudi classic
+  col10: string // id de osm
+  'mapeo osm estados': string
+  'mapeo osm municipios': string
+  'mapeo osm colonia': string
+  'NUEVO MAPEO OSM': string
+  'Es el mismo mapeo?': string
+  _index?: number // internal index for tracking
+  _confirmationNote?: string // user confirmation note
+  [key: string]: string | number | undefined
 }
 
 interface ComparisonMapModalProps {
@@ -35,10 +48,7 @@ interface ComparisonMapModalProps {
 
 interface NominatimData {
   osmId: string
-  geometry: {
-    type: string
-    coordinates: any
-  }
+  geometry: any // GeoJSON geometry object
   properties?: {
     display_name?: string
     osm_type?: string

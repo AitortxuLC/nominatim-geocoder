@@ -23,6 +23,7 @@ interface GeoRow {
   'Es el mismo mapeo?': string
   _index?: number // internal index for tracking
   _confirmationNote?: string // user confirmation note
+  [key: string]: string | number | undefined
 }
 
 export function GeosMapper() {
