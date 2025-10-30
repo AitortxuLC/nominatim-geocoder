@@ -276,6 +276,11 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                       </span>
                     )}
                   </p>
+                  {originalDataList.length === 1 && originalDataList[0].properties?.display_name && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {originalDataList[0].properties.display_name}
+                    </p>
+                  )}
                 </div>
                 <div className="h-96">
                   {originalDataList.length > 0 ? (
@@ -311,14 +316,19 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                 {originalDataList.length > 1 && (
                   <div className="p-2 bg-gray-50 border-t">
                     <p className="text-xs font-semibold text-gray-600 mb-1">Leyenda:</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-1">
                       {originalDataList.map((data, index) => (
-                        <div key={`legend-orig-${index}`} className="flex items-center gap-1">
+                        <div key={`legend-orig-${index}`} className="flex items-start gap-2">
                           <div
-                            className="w-3 h-3 rounded"
+                            className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                           />
-                          <span className="text-xs text-gray-600">{data.osmId}</span>
+                          <div className="flex-1">
+                            <span className="text-xs font-medium text-gray-700">{data.osmId}</span>
+                            {data.properties?.display_name && (
+                              <p className="text-xs text-gray-500">{data.properties.display_name}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -338,6 +348,11 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                       </span>
                     )}
                   </p>
+                  {newDataList.length === 1 && newDataList[0].properties?.display_name && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {newDataList[0].properties.display_name}
+                    </p>
+                  )}
                 </div>
                 <div className="h-96">
                   {newDataList.length > 0 ? (
@@ -373,14 +388,19 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                 {newDataList.length > 1 && (
                   <div className="p-2 bg-gray-50 border-t">
                     <p className="text-xs font-semibold text-gray-600 mb-1">Leyenda:</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-1">
                       {newDataList.map((data, index) => (
-                        <div key={`legend-new-${index}`} className="flex items-center gap-1">
+                        <div key={`legend-new-${index}`} className="flex items-start gap-2">
                           <div
-                            className="w-3 h-3 rounded"
+                            className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                           />
-                          <span className="text-xs text-gray-600">{data.osmId}</span>
+                          <div className="flex-1">
+                            <span className="text-xs font-medium text-gray-700">{data.osmId}</span>
+                            {data.properties?.display_name && (
+                              <p className="text-xs text-gray-500">{data.properties.display_name}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
