@@ -248,6 +248,17 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
 
     if (firstData.geometry.type === 'Point') {
       return [coords[1], coords[0]]
+    } else if (firstData.geometry.type === 'LineString') {
+      // Para LineString, calcular el centro promediando todas las coordenadas
+      const lat = coords.reduce((sum: number, c: number[]) => sum + c[1], 0) / coords.length
+      const lng = coords.reduce((sum: number, c: number[]) => sum + c[0], 0) / coords.length
+      return [lat, lng]
+    } else if (firstData.geometry.type === 'MultiLineString') {
+      // Para MultiLineString, usar la primera línea
+      const firstLine = coords[0]
+      const lat = firstLine.reduce((sum: number, c: number[]) => sum + c[1], 0) / firstLine.length
+      const lng = firstLine.reduce((sum: number, c: number[]) => sum + c[0], 0) / firstLine.length
+      return [lat, lng]
     } else if (firstData.geometry.type === 'Polygon') {
       const firstRing = coords[0]
       const lat = firstRing.reduce((sum: number, c: number[]) => sum + c[1], 0) / firstRing.length
@@ -398,14 +409,17 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                             </Marker>
                           )
                         }
+                        // Para LineString y MultiLineString, usar estilo más visible
+                        const isLine = data.geometry.type === 'LineString' || data.geometry.type === 'MultiLineString'
                         return (
                           <GeoJSON
                             key={`original-${data.osmId}-${index}`}
                             data={data.geometry}
                             style={{
                               color: COLORS[index % COLORS.length],
-                              weight: 2,
-                              fillOpacity: 0.2
+                              weight: isLine ? 4 : 2,
+                              fillOpacity: isLine ? 1 : 0.2,
+                              opacity: 1
                             }}
                           />
                         )
@@ -504,14 +518,17 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                             </Marker>
                           )
                         }
+                        // Para LineString y MultiLineString, usar estilo más visible
+                        const isLine = data.geometry.type === 'LineString' || data.geometry.type === 'MultiLineString'
                         return (
                           <GeoJSON
                             key={`new-${data.osmId}-${index}`}
                             data={data.geometry}
                             style={{
                               color: COLORS[index % COLORS.length],
-                              weight: 2,
-                              fillOpacity: 0.2
+                              weight: isLine ? 4 : 2,
+                              fillOpacity: isLine ? 1 : 0.2,
+                              opacity: 1
                             }}
                           />
                         )
