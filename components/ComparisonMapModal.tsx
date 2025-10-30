@@ -385,15 +385,19 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
             <>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notas de confirmación:
+                  Notas de confirmación: <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Escribe una nota sobre este cambio de mapeo..."
+                  placeholder="Escribe una nota sobre este cambio de mapeo... (obligatorio)"
                   rows={4}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103] focus:border-transparent"
+                  required
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  * Campo obligatorio para confirmar el cambio
+                </p>
               </div>
 
               {/* Action Buttons */}
@@ -406,7 +410,9 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="px-6 py-2 text-sm font-medium text-white bg-[#ed6103] hover:bg-[#d55502] rounded-lg transition-colors"
+                  disabled={!note.trim()}
+                  className="px-6 py-2 text-sm font-medium text-white bg-[#ed6103] hover:bg-[#d55502] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ed6103]"
+                  title={!note.trim() ? 'Debes escribir una nota para confirmar el cambio' : 'Confirmar cambio'}
                 >
                   Confirmar Cambio
                 </button>
