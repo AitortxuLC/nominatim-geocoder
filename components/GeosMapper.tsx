@@ -54,9 +54,6 @@ export function GeosMapper() {
     { key: 'col7', label: 'Coordenadas' },
     { key: 'col9', label: 'ID Lamudi' },
     { key: 'col10', label: 'ID OSM' },
-    { key: 'mapeo osm estados', label: 'OSM Estado' },
-    { key: 'mapeo osm municipios', label: 'OSM Municipio' },
-    { key: 'mapeo osm colonia', label: 'OSM Colonia' },
     { key: 'NUEVO MAPEO OSM', label: 'Nuevo Mapeo OSM' }
   ]
 
