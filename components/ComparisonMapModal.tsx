@@ -52,6 +52,7 @@ interface ComparisonMapModalProps {
   row: GeoRow | null
   onClose: () => void
   onConfirm: (note: string) => void
+  onDiscard: () => void
 }
 
 interface NominatimData {
@@ -72,7 +73,7 @@ const COLORS = [
   '#06b6d4', // cyan-500
 ]
 
-export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: ComparisonMapModalProps) {
+export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard }: ComparisonMapModalProps) {
   const [originalDataList, setOriginalDataList] = useState<NominatimData[]>([])
   const [newDataList, setNewDataList] = useState<NominatimData[]>([])
   const [loading, setLoading] = useState(false)
@@ -226,6 +227,11 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
 
   const handleConfirm = () => {
     onConfirm(note)
+    // Don't close - parent will handle navigation to next row or closing
+  }
+
+  const handleDiscard = () => {
+    onDiscard()
     // Don't close - parent will handle navigation to next row or closing
   }
 
@@ -565,21 +571,30 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm }: Comparis
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 justify-end border-t pt-4">
+              <div className="flex gap-3 justify-between border-t pt-4">
                 <button
                   onClick={handleClose}
                   className="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={!note.trim()}
-                  className="px-6 py-2 text-sm font-medium text-white bg-[#ed6103] hover:bg-[#d55502] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ed6103]"
-                  title={!note.trim() ? 'Debes escribir una nota para confirmar el cambio' : 'Confirmar cambio'}
-                >
-                  Confirmar Cambio
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDiscard}
+                    className="px-6 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    title="Descartar este cambio y pasar al siguiente"
+                  >
+                    Descartar Cambio
+                  </button>
+                  <button
+                    onClick={handleConfirm}
+                    disabled={!note.trim()}
+                    className="px-6 py-2 text-sm font-medium text-white bg-[#ed6103] hover:bg-[#d55502] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ed6103]"
+                    title={!note.trim() ? 'Debes escribir una nota para confirmar el cambio' : 'Confirmar cambio'}
+                  >
+                    Confirmar Cambio
+                  </button>
+                </div>
               </div>
             </>
           )}

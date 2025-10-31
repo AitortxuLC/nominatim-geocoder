@@ -23,7 +23,8 @@ interface GeoRow {
   'Es el mismo mapeo?': string
   _index?: number // internal index for tracking
   _confirmationNote?: string // user confirmation note
-  [key: string]: string | number | undefined
+  _discarded?: boolean // user discarded this change
+  [key: string]: string | number | boolean | undefined
 }
 
 export function GeosMapper() {
@@ -286,7 +287,38 @@ export function GeosMapper() {
       const actualIndex = selectedRowForConfirm._index!
       updatedData[actualIndex] = {
         ...updatedData[actualIndex],
-        _confirmationNote: note
+        _confirmationNote: note,
+        _discarded: false
+      }
+      setData(updatedData)
+      applyFilters(updatedData, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+
+      // Navigate to next row or close
+      if (nextRow) {
+        setSelectedRowForConfirm(nextRow)
+        // Modal stays open, just changes the row
+      } else {
+        // Last row, close modal
+        handleCloseConfirmModal()
+      }
+    }
+  }
+
+  const handleDiscard = () => {
+    if (selectedRowForConfirm) {
+      // Find next row in current filteredData before updating
+      const currentIndexInFiltered = filteredData.findIndex(row => row._index === selectedRowForConfirm._index)
+      const nextRow = (currentIndexInFiltered !== -1 && currentIndexInFiltered < filteredData.length - 1)
+        ? filteredData[currentIndexInFiltered + 1]
+        : null
+
+      // Mark row as discarded
+      const updatedData = [...data]
+      const actualIndex = selectedRowForConfirm._index!
+      updatedData[actualIndex] = {
+        ...updatedData[actualIndex],
+        _discarded: true,
+        _confirmationNote: undefined
       }
       setData(updatedData)
       applyFilters(updatedData, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
@@ -332,13 +364,20 @@ export function GeosMapper() {
   const exportData = () => {
     const exportRows = data.map(row => {
       // Si la fila está confirmada, usar el nuevo mapeo OSM
+      // Si la fila está descartada, usar el mapeo original (col10)
       let osmIdToExport = row.col10
+      let status = ''
 
-      if (row._confirmationNote) {
+      if (row._discarded) {
+        // Fila descartada: mantener OSM ID original
+        osmIdToExport = row.col10
+        status = 'DESCARTADO'
+      } else if (row._confirmationNote) {
         // Fila confirmada: usar NUEVO MAPEO OSM
         const nuevoMapeo = row['NUEVO MAPEO OSM'] || row.col10
         // Convertir comas y espacios a pipes
         osmIdToExport = nuevoMapeo.replace(/[,\s]+/g, '|').trim()
+        status = 'CONFIRMADO'
       }
 
       return {
@@ -352,6 +391,7 @@ export function GeosMapper() {
         coordenadas: row.col7,
         'id de lamudi classic': row.col9,
         'id de osm': `|${row.col9}|${osmIdToExport}`,
+        'estado': status,
         'nota de confirmación': row._confirmationNote || ''
       }
     })
@@ -618,13 +658,21 @@ export function GeosMapper() {
                           <button
                             onClick={() => handleOpenConfirmModal(row)}
                             className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                              row._confirmationNote
+                              row._discarded
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                                : row._confirmationNote
                                 ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
                                 : 'bg-[#ed6103] text-white hover:bg-[#d55502]'
                             }`}
-                            title={row._confirmationNote ? 'Ver confirmación' : 'Examinar mapeo'}
+                            title={
+                              row._discarded
+                                ? 'Cambio descartado - Click para revisar'
+                                : row._confirmationNote
+                                ? 'Ver confirmación'
+                                : 'Examinar mapeo'
+                            }
                           >
-                            {row._confirmationNote ? '✓ Confirmado' : 'Examinar'}
+                            {row._discarded ? '✗ Descartado' : row._confirmationNote ? '✓ Confirmado' : 'Examinar'}
                           </button>
                         </td>
                       </tr>
@@ -670,6 +718,7 @@ export function GeosMapper() {
         row={selectedRowForConfirm}
         onClose={handleCloseConfirmModal}
         onConfirm={handleSaveConfirmation}
+        onDiscard={handleDiscard}
       />
     </div>
   )
