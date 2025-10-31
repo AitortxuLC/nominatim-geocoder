@@ -32,12 +32,16 @@ export function GeosMapper() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchText, setSearchText] = useState('')
+  const [searchNombre, setSearchNombre] = useState('')
+  const [searchPadre, setSearchPadre] = useState('')
+  const [searchSlug, setSearchSlug] = useState('')
   const [filterOsmNotInMapping, setFilterOsmNotInMapping] = useState(true)
   const [filterWithoutOsmId, setFilterWithoutOsmId] = useState(true)
   const [filterWithoutNuevoMapeo, setFilterWithoutNuevoMapeo] = useState(true)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [selectedRowForConfirm, setSelectedRowForConfirm] = useState<GeoRow | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const headers = [
     { key: 'col0', label: 'ID' },
@@ -80,7 +84,7 @@ export function GeosMapper() {
             // Add internal index for tracking
             const dataWithIndex = parsedData.map((row, index) => ({ ...row, _index: index }))
             setData(dataWithIndex)
-            applyFilters(dataWithIndex, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+            applyFilters(dataWithIndex, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
             setLoading(false)
           },
           error: (error: Error) => {
@@ -112,7 +116,7 @@ export function GeosMapper() {
         // Add internal index for tracking
         const dataWithIndex = parsedData.map((row, index) => ({ ...row, _index: index }))
         setData(dataWithIndex)
-        applyFilters(dataWithIndex, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+        applyFilters(dataWithIndex, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
         setLoading(false)
       },
       error: (error: Error) => {
@@ -122,7 +126,16 @@ export function GeosMapper() {
     })
   }
 
-  const applyFilters = (sourceData: GeoRow[], search: string, osmFilter: boolean, withoutOsmFilter: boolean, withoutNuevoMapeoFilter: boolean) => {
+  const applyFilters = (
+    sourceData: GeoRow[],
+    search: string,
+    searchNombreVal: string,
+    searchPadreVal: string,
+    searchSlugVal: string,
+    osmFilter: boolean,
+    withoutOsmFilter: boolean,
+    withoutNuevoMapeoFilter: boolean
+  ) => {
     let filtered = [...sourceData]
 
     // Filter rows without OSM ID
@@ -141,7 +154,29 @@ export function GeosMapper() {
       })
     }
 
-    // Text search filter
+    // Specific search filters
+    if (searchNombreVal.trim()) {
+      const searchLower = searchNombreVal.toLowerCase()
+      filtered = filtered.filter(row =>
+        String(row.col1).toLowerCase().includes(searchLower)
+      )
+    }
+
+    if (searchPadreVal.trim()) {
+      const searchLower = searchPadreVal.toLowerCase()
+      filtered = filtered.filter(row =>
+        String(row.col2).toLowerCase().includes(searchLower)
+      )
+    }
+
+    if (searchSlugVal.trim()) {
+      const searchLower = searchSlugVal.toLowerCase()
+      filtered = filtered.filter(row =>
+        String(row.col3).toLowerCase().includes(searchLower)
+      )
+    }
+
+    // General text search filter (all columns)
     if (search.trim()) {
       const searchLower = search.toLowerCase()
       filtered = filtered.filter(row => {
@@ -167,24 +202,54 @@ export function GeosMapper() {
     setFilteredData(filtered)
   }
 
+  const debouncedApplyFilters = (
+    searchTextVal: string,
+    searchNombreVal: string,
+    searchPadreVal: string,
+    searchSlugVal: string
+  ) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      applyFilters(data, searchTextVal, searchNombreVal, searchPadreVal, searchSlugVal, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+    }, 300) // Wait 300ms after user stops typing
+  }
+
   const handleSearchChange = (value: string) => {
     setSearchText(value)
-    applyFilters(data, value, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+    debouncedApplyFilters(value, searchNombre, searchPadre, searchSlug)
+  }
+
+  const handleSearchNombreChange = (value: string) => {
+    setSearchNombre(value)
+    debouncedApplyFilters(searchText, value, searchPadre, searchSlug)
+  }
+
+  const handleSearchPadreChange = (value: string) => {
+    setSearchPadre(value)
+    debouncedApplyFilters(searchText, searchNombre, value, searchSlug)
+  }
+
+  const handleSearchSlugChange = (value: string) => {
+    setSearchSlug(value)
+    debouncedApplyFilters(searchText, searchNombre, searchPadre, value)
   }
 
   const handleOsmFilterChange = (checked: boolean) => {
     setFilterOsmNotInMapping(checked)
-    applyFilters(data, searchText, checked, filterWithoutOsmId, filterWithoutNuevoMapeo)
+    applyFilters(data, searchText, searchNombre, searchPadre, searchSlug, checked, filterWithoutOsmId, filterWithoutNuevoMapeo)
   }
 
   const handleWithoutOsmFilterChange = (checked: boolean) => {
     setFilterWithoutOsmId(checked)
-    applyFilters(data, searchText, filterOsmNotInMapping, checked, filterWithoutNuevoMapeo)
+    applyFilters(data, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, checked, filterWithoutNuevoMapeo)
   }
 
   const handleWithoutNuevoMapeoFilterChange = (checked: boolean) => {
     setFilterWithoutNuevoMapeo(checked)
-    applyFilters(data, searchText, filterOsmNotInMapping, filterWithoutOsmId, checked)
+    applyFilters(data, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, checked)
   }
 
   const handleCellEdit = (rowIndex: number, columnKey: string, value: string) => {
@@ -195,7 +260,7 @@ export function GeosMapper() {
       [columnKey]: value
     }
     setData(updatedData)
-    applyFilters(updatedData, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+    applyFilters(updatedData, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
   }
 
   const handleOpenConfirmModal = (row: GeoRow) => {
@@ -224,7 +289,7 @@ export function GeosMapper() {
         _confirmationNote: note
       }
       setData(updatedData)
-      applyFilters(updatedData, searchText, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
+      applyFilters(updatedData, searchText, searchNombre, searchPadre, searchSlug, filterOsmNotInMapping, filterWithoutOsmId, filterWithoutNuevoMapeo)
 
       // Navigate to next row or close
       if (nextRow) {
@@ -370,32 +435,68 @@ export function GeosMapper() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">Filtros</h2>
 
               <div className="space-y-4">
-                {/* Text Search */}
+                {/* Search Fields Row */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buscar en todas las columnas:
+                    Búsqueda:
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchText}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      placeholder="Escribe para filtrar..."
-                      className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103]"
-                    />
-                    <svg
-                      className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  <div className="grid grid-cols-4 gap-3">
+                    {/* General Search */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchText}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder="Todas las columnas..."
+                        className="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103]"
                       />
-                    </svg>
+                      <svg
+                        className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
+
+                    {/* Search Nombre */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchNombre}
+                        onChange={(e) => handleSearchNombreChange(e.target.value)}
+                        placeholder="Nombre..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103]"
+                      />
+                    </div>
+
+                    {/* Search Padre */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchPadre}
+                        onChange={(e) => handleSearchPadreChange(e.target.value)}
+                        placeholder="Nombre Padre..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103]"
+                      />
+                    </div>
+
+                    {/* Search Slug */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchSlug}
+                        onChange={(e) => handleSearchSlugChange(e.target.value)}
+                        placeholder="Slug..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103]"
+                      />
+                    </div>
                   </div>
                 </div>
 
