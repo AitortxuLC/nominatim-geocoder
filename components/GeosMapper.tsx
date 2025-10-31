@@ -657,7 +657,7 @@ export function GeosMapper() {
                         <td className="px-2 py-2">
                           <button
                             onClick={() => handleOpenConfirmModal(row)}
-                            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                            className={`w-24 px-3 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap ${
                               row._discarded
                                 ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
                                 : row._confirmationNote
