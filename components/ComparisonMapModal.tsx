@@ -54,6 +54,8 @@ interface ComparisonMapModalProps {
   onClose: () => void
   onConfirm: (note: string) => void
   onDiscard: () => void
+  currentIndex: number
+  totalRows: number
 }
 
 interface NominatimData {
@@ -74,7 +76,7 @@ const COLORS = [
   '#06b6d4', // cyan-500
 ]
 
-export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard }: ComparisonMapModalProps) {
+export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard, currentIndex, totalRows }: ComparisonMapModalProps) {
   const [originalDataList, setOriginalDataList] = useState<NominatimData[]>([])
   const [newDataList, setNewDataList] = useState<NominatimData[]>([])
   const [loading, setLoading] = useState(false)
@@ -294,15 +296,23 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard 
           {/* Header */}
           <div className="flex items-center justify-between mb-4 border-b pb-4">
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-800">
-                Comparación de Mapeos - <span className="font-semibold">ID:</span> {row.col0} | <span className="font-semibold">Nombre:</span> {row.col1}
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Comparación de Mapeos
+                </h2>
+                <span className="px-3 py-1 text-sm font-semibold text-white bg-[#ed6103] rounded-full">
+                  {currentIndex + 1} de {totalRows}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold">ID:</span> {row.col0} | <span className="font-semibold">Nombre:</span> {row.col1}
                 {row.col2 && row.col2 !== '' && (
                   <> | <span className="font-semibold">Padre:</span> {row.col2}</>
                 )}
                 {row.col3 && row.col3 !== '' && (
                   <> | <span className="font-semibold">Slug:</span> {row.col3}</>
                 )}
-              </h2>
+              </p>
             </div>
             <button
               onClick={handleClose}

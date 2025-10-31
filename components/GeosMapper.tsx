@@ -589,7 +589,7 @@ export function GeosMapper() {
                       className="w-4 h-4 text-[#ed6103] focus:ring-[#ed6103] rounded cursor-pointer"
                     />
                     <span className="text-sm font-medium text-gray-700">
-                      Mostrar solo registros donde ID OSM no esté en Nuevo Mapeo OSM
+                      Ocultar registros con Ids coincidentes
                       <span className="ml-2 text-xs text-gray-500">
                         ({data.filter(row => {
                           const osmId = row.col10?.trim()
@@ -716,6 +716,8 @@ export function GeosMapper() {
         onClose={handleCloseConfirmModal}
         onConfirm={handleSaveConfirmation}
         onDiscard={handleDiscard}
+        currentIndex={selectedRowForConfirm ? filteredData.findIndex(row => row._index === selectedRowForConfirm._index) : 0}
+        totalRows={filteredData.length}
       />
     </div>
   )
