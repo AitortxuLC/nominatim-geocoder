@@ -1,13 +1,31 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const isActive = (path: string) => {
     return pathname === path
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+    } finally {
+      setLoggingOut(false)
+    }
   }
 
   return (
@@ -56,6 +74,14 @@ export function Navigation() {
               </Link>
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+          </button>
         </div>
       </div>
     </nav>
