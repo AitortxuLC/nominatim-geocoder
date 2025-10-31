@@ -554,6 +554,53 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard 
           {!loading && (
             <>
               <div className="mb-6">
+                {/* Predefined Comments */}
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Comentarios predeterminados:</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        const comment = 'Dos zonas que se llaman igual, hay que desambiguar'
+                        setNote(comment)
+                        onConfirm(comment)
+                      }}
+                      className="px-4 py-2 text-xs font-medium text-left text-gray-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                    >
+                      ✓ Dos zonas que se llaman igual, hay que desambiguar
+                    </button>
+                    <button
+                      onClick={() => {
+                        const comment = 'Unión de dos zonas con nombre similar'
+                        setNote(comment)
+                        onConfirm(comment)
+                      }}
+                      className="px-4 py-2 text-xs font-medium text-left text-gray-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                    >
+                      ✓ Unión de dos zonas con nombre similar
+                    </button>
+                    <button
+                      onClick={() => {
+                        const comment = 'Hay una geometria osm con el mismo nombre que coincide mejor'
+                        setNote(comment)
+                        onConfirm(comment)
+                      }}
+                      className="px-4 py-2 text-xs font-medium text-left text-gray-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                    >
+                      ✓ Hay una geometria osm con el mismo nombre que coincide mejor
+                    </button>
+                    <button
+                      onClick={() => {
+                        const comment = 'Zona erronea, hay que corregirla'
+                        setNote(comment)
+                        onConfirm(comment)
+                      }}
+                      className="px-4 py-2 text-xs font-medium text-left text-gray-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                    >
+                      ✓ Zona erronea, hay que corregirla
+                    </button>
+                  </div>
+                </div>
+
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Notas de confirmación: <span className="text-red-500">*</span>
                 </label>
@@ -561,7 +608,7 @@ export function ComparisonMapModal({ isOpen, row, onClose, onConfirm, onDiscard 
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Escribe una nota sobre este cambio de mapeo... (obligatorio)"
-                  rows={4}
+                  rows={1}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ed6103] focus:border-transparent"
                   required
                 />
